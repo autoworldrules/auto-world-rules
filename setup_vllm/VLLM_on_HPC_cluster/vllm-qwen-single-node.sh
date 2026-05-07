@@ -28,8 +28,12 @@ echo "SERVING ON $HOSTNAME with TENSOR_PARALLELISM_SIZE=$TENSOR_PARALLELISM_SIZE
 echo "MODEL_PATH=$MODEL_PATH"
 echo "SERVER_ADDRESS=$SERVER_ADDRESS"
 
-# Site-specific module (Isambard-AI). Comment out on other sites.
-module load brics/nccl
+# Site-specific NCCL module. Override NCCL_MODULE for your HPC cluster,
+# or leave empty (NCCL_MODULE="") to skip this module load.
+NCCL_MODULE="${NCCL_MODULE:-site/nccl}"
+if [ -n "$NCCL_MODULE" ]; then
+    module load "$NCCL_MODULE"
+fi
 module list
 
 export CC=gcc

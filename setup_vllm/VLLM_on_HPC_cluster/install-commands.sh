@@ -1,4 +1,4 @@
-# Install vllm for Isambard-AI Phase 2 (run from the setup_vllm/ root).
+# Install vllm for an HPC cluster GPU node (run from the setup_vllm/ root).
 
 # Load pre-installed CUDA modules
 module load cudatoolkit

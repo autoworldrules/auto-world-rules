@@ -1,7 +1,7 @@
 # setup_vllm — Local vLLM model server for the FunSearch pipeline
 
 This directory contains the minimum files required to launch an
-OpenAI-compatible **vLLM** server on an Isambard-AI Phase 2 GPU node so the
+OpenAI-compatible **vLLM** server on an HPC-cluster GPU node so the
 `RunFunsearchEvo` FullFlow client can send queries to it.
 
 ## Layout
@@ -13,15 +13,16 @@ setup_vllm/
 ├── test_model_call_with_curl.sh       sanity check via curl
 ├── test_model_call_with_python.py     sanity check via openai client
 ├── sbatch_server_ini_logs/            SLURM stdout/stderr land here
-└── VLLM_on_Isambard/
+└── VLLM_on_HPC_cluster/
     ├── install-commands.sh            one-shot environment bootstrap
     └── vllm-qwen-single-node.sh       SBATCH entrypoint (4 GPUs, 1 node)
 ```
 
 ## 1. Prerequisites
 
-- Isambard-AI Phase 2 GPU node (4 × NVIDIA Grace-Hopper).
-- `module` system providing `cudatoolkit` and `brics/nccl`.
+- An HPC-cluster GPU node (the default script targets 4 GPUs on a single node).
+- A SLURM scheduler (`sbatch`, `srun`).
+- A `module` system providing `cudatoolkit` and an NCCL module.
 - [`uv`](https://docs.astral.sh/uv/) for environment management.
 - A Hugging Face cache containing the target model snapshot. The default
   script expects `Qwen/Qwen3-Coder-Next` under `~/HF_models/hub/`.
@@ -55,7 +56,7 @@ srun --gpus=1 --pty bash -c "
 ```
 
 The bootstrap above is also packaged as
-[VLLM_on_Isambard/install-commands.sh](VLLM_on_Isambard/install-commands.sh)
+[VLLM_on_HPC_cluster/install-commands.sh](VLLM_on_HPC_cluster/install-commands.sh)
 and pinned in [requirements.txt](requirements.txt).
 
 A different vLLM version may be needed for newer models — adjust the version
@@ -66,7 +67,7 @@ pin and the `--extra-index-url` accordingly.
 From inside `setup_vllm/`:
 
 ```bash
-sbatch VLLM_on_Isambard/vllm-qwen-single-node.sh
+sbatch VLLM_on_HPC_cluster/vllm-qwen-single-node.sh
 ```
 
 What the script does:
@@ -74,7 +75,9 @@ What the script does:
 - Requests 1 node, 4 GPUs, exclusive, 23h55m.
 - Activates `./.venv` (paths are derived from the script location, so the
   script is portable as long as it is run from the `setup_vllm/` tree).
-- Loads `brics/nccl`.
+- Loads an NCCL module via `module load $NCCL_MODULE` (default
+  `site/nccl`). Override `NCCL_MODULE` for your cluster, or set it to the
+  empty string to skip.
 - Reads `HF_HOME`, `MODEL_PATH`, `MODEL_NAME`, `TENSOR_PARALLELISM_SIZE`
   from the environment (with sensible defaults) so you can override without
   editing the script:
@@ -84,7 +87,8 @@ What the script does:
   MODEL_PATH=$HOME/HF_models/hub/models--Qwen--Qwen3-Coder-Next/snapshots/<HASH> \
   MODEL_NAME=qwen3-next \
   TENSOR_PARALLELISM_SIZE=4 \
-      sbatch VLLM_on_Isambard/vllm-qwen-single-node.sh
+  NCCL_MODULE=<your-cluster-nccl-module> \
+      sbatch VLLM_on_HPC_cluster/vllm-qwen-single-node.sh
   ```
 
 - Runs `vllm serve` with `--max-model-len 16384`, `--enable-prefix-caching`,
@@ -143,5 +147,6 @@ A successful run prints a model-generated answer.
 - For multi-node serving, increase `--nodes` and adjust
   `TENSOR_PARALLELISM_SIZE` / Ray launch flags accordingly. This release
   ships only the single-node script.
-- `module load brics/nccl` is Isambard-specific; on other clusters replace
-  it with the equivalent NCCL/CUDA module stack.
+- The NCCL module name is cluster-specific; set `NCCL_MODULE` to whatever
+  your site provides (or leave empty if NCCL is already on the default
+  module path).
