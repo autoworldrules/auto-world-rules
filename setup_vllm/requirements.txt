@@ -1,0 +1,3 @@
+vllm[flashinfer]==0.15.1
+ray[default]
+openai
