@@ -1,0 +1,9 @@
+[[index]]
+url = "https://pypi.org/simple"
+default = true
+
+[[index]]
+url = "https://download.pytorch.org/whl/cu121"
+
+[[index]]
+url = "https://data.pyg.org/whl/torch-2.3.0+cu121.html"
