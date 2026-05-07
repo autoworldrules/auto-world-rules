@@ -1,0 +1,83 @@
+## 
+#=== func to run. evalaution part
+@funsearch.run
+def evaluate(priority_fn):
+    # presently the evaluator is directly equipped with the code to generate the scores
+    pass
+
+
+def solve(n: int) -> np.ndarray:
+    """Solve function for story generation."""
+    generator_queries = StoryQueryGeneratorNoRa1_1()
+    base_seed = 42
+    final_df_queries = pd.DataFrame()
+    num_stories = 3
+    num_min_queries = 9
+    story_idx = 0
+    int_increment = 0
+    while story_idx < num_stories:
+        print(f"\n================ STORY {story_idx} ================\n")
+        # Story generator with a different seed each time
+        generator_story = PrioStoryGeneratorNoRa1_1(
+            priority_fn=priority,
+            seed=base_seed + story_idx + int_increment,
+            min_entities=6,
+            max_entities=9,
+            num_cands=32
+        )
+
+        this_dir = os.path.dirname(os.path.abspath(__file__))
+        rules_path = os.path.join(this_dir, "..", "Collaterals", "NoRa1.1.txt")
+
+        # Generate a story
+        story_info = generator_story.generate_story_from_rules(rules_path)
+
+        # Build queries for this story (pre_load_dataset format for the ET)
+        df_queries = generator_queries.build_query_dataframe(story_info)
+        if df_queries.shape[0] < num_min_queries:
+            int_increment += 1
+            continue
+        # filter
+        df_queries = df_queries.iloc[:num_min_queries] ## no need to use exactl num_min_queries, num_queries in a story must be greater than num_min_queries b that's it, if there are more , that's fine!  
+        final_df_queries = pd.concat([final_df_queries, df_queries])
+        story_idx += 1
+        int_increment += 1
+
+
+# =========================
+# Evolved function (LLM)
+# =========================
+
+# @funsearch.evolve
+def priority(cand_fact: str, definite_rules_program: str, entailed_facts: str, facts_program: str) -> float:
+    """
+    Priority function for selecting among candidate facts.
+
+    Parameters
+    ----------
+    cand_fact : str
+        Candidate fact string, e.g. "father_of(1,3).". This is a relational fact  proposed
+        to be added to the facts already present in the story.
+    definite_rules_program : str
+        String containing all definite (Horn) rules. These rules are used to
+        derive implied facts from the story facts.
+    entailed_facts : str
+        String containing facts in the stable model that are not in story facts or candidate facts.
+        These are facts derived through the definite rules when the candidate fact is added.
+    facts_program : str
+        String containing all ground facts, i.e., the story facts that are already
+        part of the story.
+
+    Returns
+    -------
+    float
+        A priority score for the candidate fact.
+
+    Description
+    -----------
+    The idea is to assign a high score to a candidate fact if:
+      1. Adding it to the existing story facts does not create contradictions.
+      2. Its addition leads to the derivation of entailed facts via the definite
+         rules that are difficult for reasoning models to discover.
+    """
+    return 0.0

@@ -1,0 +1,161 @@
+{
+  "parallel": {
+    "num_samplers": 10,
+    "_comment_num_samplers": "Number of parallel worker processes to run simultaneously. Used by run_evolution_cycle() and parallel_process_helper.run_sampler_worker(). Each worker gets a database shard and samples in parallel.",
+    
+    "num_islands": 10,
+    "_comment_num_islands": "Total number of islands across all workers for evolutionary diversity. Used by programs_database.ProgramsDatabase.__init__() via ProgramsDatabaseConfig. Islands are independent sub-populations that evolve separately.",
+    
+    "enable_worker_timeout": true,
+    "_comment_enable_worker_timeout": "Whether to enable worker timeout mechanisms. If false, workers can run indefinitely (useful for debugging). If true, workers are subject to timeout constraints below.",
+    
+    "worker_timeout_after_first_completion": 3600,
+    "_comment_worker_timeout_after_first_completion": "Timeout in seconds for remaining workers after first worker completes (default 1 hour). Used by run_evolution_cycle() to detect stuck/hung workers. If a worker doesn't complete within this time after the first completion, it will be terminated and its input shard copied to output as fallback. Set to null to disable.",
+    
+    "absolute_worker_timeout": 7200,
+    "_comment_absolute_worker_timeout": "Absolute timeout in seconds from when workers start (default 2 hours). Safety net to prevent infinite waiting if all workers fail early. Used by run_evolution_cycle() monitoring loop. Set to null to disable."
+  },
+  
+  "evaluation": {
+    "num_evaluators": 1,
+    "_comment_num_evaluators": "Number of evaluator instances per worker/process. Used by parallel_process_helper.create_worker_evaluators(). Creates EvaluatorWrapper instances that wrap EvaluatorET.",
+    
+    "num_stories": 8,
+    "_comment_num_stories": "Number of stories to generate per evaluation. Used by Evaluator.evaluator.EvaluatorET.__init__() and EvaluatorMock.EvaluatorWrapper.__init__(). Determines batch size for story generation and evaluation.",
+    
+    "base_seed": 52,
+    "_comment_base_seed": "Base random seed for reproducible story generation. Used by Collaterals.PrioStoryGeneratorNoRa1_1 via EvaluatorWrapper. Seeds are derived from this for different entities/stories.",
+    
+    "min_entities": 5,
+    "_comment_min_entities": "Minimum number of entities for story generation. Used by Collaterals.PrioStoryGeneratorNoRa1_1 via EvaluatorWrapper. Controls complexity of generated stories.",
+    
+    "max_entities": 8,
+    "_comment_max_entities": "Maximum number of entities for story generation. Used by Collaterals.PrioStoryGeneratorNoRa1_1 via EvaluatorWrapper. Controls complexity of generated stories.",
+    
+    "num_cands": 20,
+    "_comment_num_cands": "Number of candidate facts to assess before choosing one. Used by Collaterals.PrioStoryGeneratorNoRa1_1 via EvaluatorWrapper. Higher num_cands means more candidates will be assessed before one is chosen. Passed to evolved priority function for fact selection.",
+
+    "parallel_stories": 6,
+    "_comment_parallel_stories": "Maximum number of stories to generate in parallel within each evaluator call (uses ProcessPoolExecutor). Stories beyond this count are generated in subsequent batches. Set to 1 to disable parallel story generation. With num_samplers=10 workers, keep this moderate (e.g. 6) to avoid over-subscribing CPUs."
+  },
+  
+  "sampling": {
+    "num_tries_per_sampler": 20,
+    "_comment_num_tries_per_sampler": "Number of LLM calls each worker makes per cycle. Each call generates new code that is evaluated and inserted into one of the worker's islands. Used by run_evolution_cycle().",
+    
+    "num_reset": 4,
+    "_comment_num_reset": "Number of reset/culling cycles (evolve → reset → evolve → reset...). Used by main() loop - controls outer evolutionary loop. Each cycle: evolve with LLM, then cull weak islands, keep strong ones."
+  },
+  
+  "llm": {
+    "use_local_llm": false,
+    "use_served_llm": true,
+    "_comment_use_local_llm": "Whether to use local LLM or no LLM at all for code generation (Local False and served False = mock/random). Used by Sampler.sampler.Sampler.__init__() and parallel_process_helper.create_worker_sampler(). If both are False, generates random/mock code instead of calling LLM..only for testing.",
+    "_comment_use_served_llm": "Whether to  served LLM or no LLM at all for code generation (Local False and served False = mock/random). Used by Sampler.sampler.Sampler.__init__() and parallel_process_helper.create_worker_sampler(). If both are False, generates random/mock code instead of calling LLM..only for testing.",
+    "llm_model": "qwen3-next",
+    "_comment_llm_model": "Model identifier for LLM configuration. Used by Sampler.sampler.Sampler._setup_llm() via llm_config parameter. Maps to model path in LlmModels directory.",
+    
+    "max_llm_retries": 5,
+    "_comment_max_llm_retries": "Maximum retry attempts for LLM API calls on failure. Used by Sampler.sampler.Sampler.__init__() and parallel_process_helper.create_worker_sampler(). Handles transient LLM errors with exponential backoff.",
+    
+    "base_url": "http://nid010137:8000/v1",
+    "_comment_base_url": "Base URL for served LLM API endpoint (required when use_served_llm is true). Used by Sampler.samplerVLLMClient.LLM.__init__() and passed to LLMClient.__init__(). Points to vLLM server endpoint."
+  },
+  
+  "logging": {
+    "log_level": "DEBUG",
+    "_comment_log_level": "Logging verbosity level: DEBUG, INFO, WARNING, ERROR, CRITICAL. Used by parallel_process_helper.setup_worker_logger() and main() for logger configuration. DEBUG shows detailed execution info, INFO shows key milestones only.",
+
+    "log_prompt_frequency": 10,
+    "_comment_log_prompt_frequency": "Log the formatted LLM prompt on the 1st call and then every N-th call. Controls verbosity of prompt debug logging in samplerVLLMClient.LLM._draw_sample().",
+
+    "log_eval_sample_frequency": 10,
+    "_comment_log_eval_sample_frequency": "Log the registered program sample on the 1st call and then every N-th call. Controls verbosity of sample debug logging in EvaluatorMock.EvaluatorWrapper.analyse()."
+  },
+  
+  "database": {
+    "save_db_path": "Funsearch/Logs/programs_db_checkpoint.pkl",
+    "_comment_save_db_path": "Path to save/load the programs database checkpoint (relative to project root or absolute). Used by programs_database.save_programs_database() and load_programs_database(). Enables resuming experiments from saved state.",
+    
+    "load_from_checkpoint": false,
+    "_comment_load_from_checkpoint": "Whether to load existing database or create new one. Used by main() - controls initialization logic. If True and file exists: loads checkpoint; else: creates new database.",
+
+    "referencedb": null,
+    "_comment_referencedb": "Path to reference database pickle file for seeding (null to skip, relative to project root or absolute). Used by database_initialization.initialize_database(). If provided, top programs from reference DB are extracted and registered to new database islands alongside the initial program."
+
+       
+  },
+  
+  "template": {
+    "skeleton_path": "Funsearch/Collaterals/skeleton.txt",
+    "_comment_skeleton_path": "Path to skeleton file containing program structure/template (relative to project root or absolute). Used by code_manipulation.text_to_program() to create template Program object. Template defines the structure that evolved priority functions fit into.",
+    
+    "function_to_evolve": "priority",
+    "_comment_function_to_evolve": "Name of the function that the LLM will evolve. Used by programs_database.ProgramsDatabase.__init__() and database_sharding.shard_database(). Identifies which function in the template to replace with evolved versions.",
+    
+    "priority_fn_str_ini": "\ndef priority(cand_fact: str, definite_rules_program: str, entailed_facts: str, facts_program: str) -> float:\n    '''\n    Priority function for selecting among candidate facts.\n    '''\n    return 0.0\n",
+    "_comment_priority_fn_str_ini": "Initial version of the priority function to evolve. This simple baseline always returns 0.0, treating all facts equally. Used by EvaluatorMock.EvaluatorWrapper.analyse() for initial program registration. This is version 0 registered to all islands; LLM evolves improved versions."
+  },
+
+  "multi_round": {
+    "num_rounds": 8,
+    "_comment_num_rounds": "Number of outer rounds. Each round runs num_reset evolution cycles, then retrains the ET model from the best priority function. Set to 1 to disable multi-round logic (legacy single-round mode).",
+
+    "base_run_dir": "Funsearch/Logs/RoundRuns",
+    "_comment_base_run_dir": "Root directory for run outputs. A datetime-stamped sub-directory (the run_dir) is created inside, and each round gets its own sub-directory within the run_dir. Contains DB checkpoints, sampler logs, training CSVs, models, and lightning logs per round.",
+
+    "resume_run_dir": null,
+    "_comment_resume_run_dir": "Set to the path of a previous run_dir (e.g. 'Funsearch/Logs/RoundRuns/20260330_045414') to resume an interrupted SLURM run. The launcher detects the last fully completed round N from records.pkl, cleans up the partial round N+1, and restarts from round N+1 reusing round N's ET model and database (no retraining or rescoring if db_checkpoint_init.pkl was already written). Set to null for a fresh run.",
+
+    "alt_training_sources_init": ["Funsearch/Evaluator/train_no_ambig.csv", "Funsearch/Collaterals/WhenNoPathsTestSplits/test-BL-na_for_train.csv", "Funsearch/Collaterals/WhenNoPathsTestSplits/test-D-na_for_train.csv", "Funsearch/Collaterals/WhenNoPathsTestSplits/test-OPEC-na_for_train.csv" ],
+    "_comment_alt_training_sources_init": "CSV paths used to train the initial EdgeTransformer (ET_0) before round 1 evolution. Only used once. Paths resolved relative to the project root.",
+
+    "alt_training_sources_everyrnd": ["Funsearch/Collaterals/WhenNoPathsTestSplits/test-BL-na_for_train.csv", "Funsearch/Collaterals/WhenNoPathsTestSplits/test-D-na_for_train.csv", "Funsearch/Collaterals/WhenNoPathsTestSplits/test-OPEC-na_for_train.csv"],
+    "_comment_alt_training_sources_everyrnd": "CSV paths merged into every round's final_train.csv alongside base_train.csv and the previous round's final_train.csv. Empty list means no extra sources beyond the evolving data.",
+
+    "num_stories_train": 60,
+    "_comment_num_stories_train": "Number of stories to generate when creating base_train.csv from the best priority function at the end of each round. These stories are used to train the next round's EdgeTransformer.",
+
+    "num_stories_eval": 15,
+    "_comment_num_stories_eval": "Number of stories to generate when creating eval.csv from the best priority function at the end of each round. Uses a different seed than base_train.csv to ensure independent evaluation.",
+
+    "eval_seed_offset": 10000,
+    "_comment_eval_seed_offset": "Added to evaluation.base_seed to obtain the seed for eval.csv generation, ensuring it differs from base_train.csv generation seed.",
+
+    "et_epochs": 70,
+    "_comment_et_epochs": "Number of training epochs for EdgeTransformer retraining between rounds.",
+
+    "et_batch_size": 32,
+    "_comment_et_batch_size": "Batch size for EdgeTransformer retraining between rounds.",
+
+    "et_lr": 1e-3,
+    "_comment_et_lr": "Learning rate for EdgeTransformer retraining between rounds.",
+
+    "et_training_seed": 42,
+    "_comment_et_training_seed": "Random seed for EdgeTransformer retraining (controls data splits and initialisation).",
+
+    "et_dataset_type": "no_ambiguity_v2",
+    "_comment_et_dataset_type": "Dataset type passed to the EdgeTransformer training routine.",
+
+    "et_max_final_training_size": 6000,
+    "_comment_et_max_final_training_size": "If set, the final merged training CSV is randomly subsampled to at most this many rows before training. Null means no limit.",
+
+    "et_val_check_interval": 5,
+    "_comment_et_val_check_interval": "Run validation every N epochs during ET training. Default 10 means val runs at epoch 10, 20, 30, ... and at epoch 0 (baseline before any training).",
+
+    "eval_device": "cuda",
+    "_comment_eval_device": "Device for EdgeTransformer evaluation between rounds ('cuda' or 'cpu').",
+
+    "eval_max_samples": null,
+    "_comment_eval_max_samples": "If set, randomly sample at most this many rows from each test CSV during between-round evaluation. Null means use all rows.",
+
+    "unique_labels_path": null,
+    "_comment_unique_labels_path": "Path to unique_labels.pkl. Null defaults to Funsearch/Evaluator/unique_labels.pkl.",
+
+    "rules_path": null,
+    "_comment_rules_path": "Path to rules file for story generation. Null defaults to Funsearch/Collaterals/NoRa1.1.txt.",
+
+    "num_cands_training": 20,
+    "_comment_num_cands_training": "Number of candidate facts for story generation during post-round CSV creation. May differ from evaluation.num_cands used during FunSearch cycles."
+  }
+}

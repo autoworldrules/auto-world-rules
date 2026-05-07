@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# uv / venv
+.venv/
+
+# Runtime outputs
+Funsearch/Logs/
+*.log
+*.out
+*.err
+
+# Per-run / generated artefacts
+*.pkl
+!Funsearch/Evaluator/unique_labels.pkl
+*.pth
+!Funsearch/Evaluator/no_ambig_input_v2.pth
+shards/
+cycle_dbs/
+lightning_logs/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
