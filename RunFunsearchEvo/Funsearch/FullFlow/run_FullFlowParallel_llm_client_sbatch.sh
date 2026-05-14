@@ -5,7 +5,7 @@
 #SBATCH --cpus-per-task=72
 #SBATCH --mem=60G
 #SBATCH --gpus=1
-#SBATCH --time=03:55:00
+#SBATCH --time=23:55:00
 #SBATCH --chdir=.
 #SBATCH --output=Funsearch/Logs/RoundRuns/%x.%j.out
 #SBATCH --error=Funsearch/Logs/RoundRuns/%x.%j.err

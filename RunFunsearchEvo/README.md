@@ -48,7 +48,7 @@ RunFunsearchEvo/
 
 The Python environment is managed with [uv](https://docs.astral.sh/uv/).
 **Read [`read_me_uv_env.md`](read_me_uv_env.md) for the authoritative,
-step-by-step instructions** (covers Isambard-AI Phase 2 specifically and
+step-by-step instructions** (covers a Cray-module HPC cluster and
 generic local installs).
 
 Quick summary:
@@ -56,7 +56,7 @@ Quick summary:
 ```bash
 cd RunFunsearchEvo
 
-# 1. (On Isambard-AI) get an interactive GPU node and load modules
+# 1. (On the HPC cluster) get an interactive GPU node and load modules
 srun --gpus=1 --pty /bin/bash --login
 module load cray-python
 module load cudatoolkit
@@ -70,7 +70,7 @@ uv sync --extra gpu --extra llm  # add CUDA torch + lightning + accelerate + bnb
 
 source .venv/bin/activate
 
-# 3. Reinstall a CUDA-matched torch (Isambard wheels)
+# 3. Reinstall a CUDA-matched torch (cluster-matched wheels)
 uv pip install --force-reinstall torch torchvision torchaudio \
     --index-url https://download.pytorch.org/whl/cu128
 
@@ -90,9 +90,9 @@ print("torch-scatter cuda:", torch_scatter.__version__)
 EOF
 ```
 
-For non-Isambard machines, follow the **PROCEDURE (local --steps)** section in
-[`read_me_uv_env.md`](read_me_uv_env.md) (uses prebuilt PyG wheels for cu121
-instead of building from source).
+For machines without the Cray module stack, follow the **PROCEDURE (local --steps)**
+section in [`read_me_uv_env.md`](read_me_uv_env.md) (uses prebuilt PyG wheels
+for cu121 instead of building from source).
 
 ---
 
@@ -120,6 +120,12 @@ for the full directory schema.
 
 ### Required runtime services
 
+Before launching, open
+[`Funsearch/Collaterals/FullFlowconfigs/configAD_served_qwen3-next.json`](Funsearch/Collaterals/FullFlowconfigs/configAD_served_qwen3-next.json)
+to review the run settings (number of rounds and cycles per round, sampler
+worker count, EdgeTransformer training hyperparameters, prompt template, LLM
+endpoint, etc.). The defaults reproduce the runs reported in the paper.
+
 The config is set up for a **served** LLM (vLLM, OpenAI-compatible API). You
 must edit `Funsearch/Collaterals/FullFlowconfigs/configAD_served_qwen3-next.json`
 and set `llm.base_url` to your vLLM endpoint, e.g.:
@@ -133,6 +139,17 @@ and set `llm.base_url` to your vLLM endpoint, e.g.:
 }
 ```
 
+If you do not already have a vLLM server, the companion `setup_vllm/` package
+(sibling directory in this repository) can spin one up on a sufficiently
+powerful SLURM HPC node:
+
+```bash
+sbatch ../setup_vllm/VLLM_on_HPC_cluster/vllm-qwen-single-node.sh
+```
+
+See `../setup_vllm/README.md` for prerequisites and the resulting endpoint
+URL format.
+
 To run without an LLM (random/mock generation, useful for smoke-testing),
 set both `use_local_llm` and `use_served_llm` to `false`.
 
@@ -144,20 +161,8 @@ last fully-completed round and restarts from the next one without retraining.
 
 ---
 
-## 4. Notes on what is NOT included
 
-The following are intentionally omitted from this public release because they
-are not on the execution path of the entry point:
-
-- `Funsearch/PostDatabaseGeneration/` — post-hoc analysis & causal-attribution tooling
-- `Funsearch/MultiRoundEvalTrainer/HowGodIsSuperET/`, `plotting/`, `verify_round_success.py`
-- `Funsearch/GraphWranglingMethods/`, `Funsearch/tests/`
-- `pytorch_scatter/` (vendored; install via `pip` per the env setup)
-- All experiment results, logs, scrap notebooks, and the original `.venv/`
-
----
-
-## 5. Citation / contact
+## 4. Citation / contact
 
 This release builds on ideas and/or components associated with [Potassco / clingo](https://potassco.org/), [google-deepmind/funsearch](https://github.com/google-deepmind/funsearch), and the NoRA paper [When No Paths Lead to Rome: Benchmarking Systematic Neural Relational Reasoning](https://openreview.net/forum?id=HZJiIog5XH). These resources are compatible with non-commercial research use when proper attribution is maintained: clingo is distributed under the MIT License, the DeepMind FunSearch software is distributed under Apache 2.0, and the OpenReview paper page indicates a CC BY-NC 4.0 license.
 

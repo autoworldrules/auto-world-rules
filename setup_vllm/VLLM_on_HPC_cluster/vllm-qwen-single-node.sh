@@ -3,7 +3,7 @@
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=72
 #SBATCH --gpus=4
-#SBATCH --time=1:45:00
+#SBATCH --time=23:55:00
 #SBATCH --exclusive
 #SBATCH --output=sbatch_server_ini_logs/%x.%j.out
 

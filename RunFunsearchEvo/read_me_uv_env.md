@@ -1,7 +1,7 @@
 a CPU-only base, and
 # ENVIRONMENT SETUP NOTES
 
-## PROCEDURE ON ISAMBARD-AI PHASE 2
+## PROCEDURE ON HPC-CLUSTER (Cray + CUDA toolkit modules)
 
 ```bash
 cd auto-world-rules
