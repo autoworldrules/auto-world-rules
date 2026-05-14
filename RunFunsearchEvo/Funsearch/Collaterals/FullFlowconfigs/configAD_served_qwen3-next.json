@@ -20,10 +20,10 @@
     "num_evaluators": 1,
     "_comment_num_evaluators": "Number of evaluator instances per worker/process. Used by parallel_process_helper.create_worker_evaluators(). Creates EvaluatorWrapper instances that wrap EvaluatorET.",
     
-    "num_stories": 2,
+    "num_stories": 8,
     "_comment_num_stories": "Number of stories to generate per evaluation. Used by Evaluator.evaluator.EvaluatorET.__init__() and EvaluatorMock.EvaluatorWrapper.__init__(). Determines batch size for story generation and evaluation.",
     
-    "base_seed": 52,
+    "base_seed": 42,
     "_comment_base_seed": "Base random seed for reproducible story generation. Used by Collaterals.PrioStoryGeneratorNoRa1_1 via EvaluatorWrapper. Seeds are derived from this for different entities/stories.",
     
     "min_entities": 5,
@@ -32,7 +32,7 @@
     "max_entities": 8,
     "_comment_max_entities": "Maximum number of entities for story generation. Used by Collaterals.PrioStoryGeneratorNoRa1_1 via EvaluatorWrapper. Controls complexity of generated stories.",
     
-    "num_cands": 5,
+    "num_cands": 20,
     "_comment_num_cands": "Number of candidate facts to assess before choosing one. Used by Collaterals.PrioStoryGeneratorNoRa1_1 via EvaluatorWrapper. Higher num_cands means more candidates will be assessed before one is chosen. Passed to evolved priority function for fact selection.",
 
     "parallel_stories": 6,
@@ -40,7 +40,7 @@
   },
   
   "sampling": {
-    "num_tries_per_sampler": 3,
+    "num_tries_per_sampler": 20,
     "_comment_num_tries_per_sampler": "Number of LLM calls each worker makes per cycle. Each call generates new code that is evaluated and inserted into one of the worker's islands. Used by run_evolution_cycle().",
     
     "num_reset": 4,
@@ -122,7 +122,7 @@
     "eval_seed_offset": 10000,
     "_comment_eval_seed_offset": "Added to evaluation.base_seed to obtain the seed for eval.csv generation, ensuring it differs from base_train.csv generation seed.",
 
-    "et_epochs": 5,
+    "et_epochs": 70,
     "_comment_et_epochs": "Number of training epochs for EdgeTransformer retraining between rounds.",
 
     "et_batch_size": 32,
@@ -137,7 +137,7 @@
     "et_dataset_type": "no_ambiguity_v2",
     "_comment_et_dataset_type": "Dataset type passed to the EdgeTransformer training routine.",
 
-    "et_max_final_training_size": 2000,
+    "et_max_final_training_size": 6000,
     "_comment_et_max_final_training_size": "If set, the final merged training CSV is randomly subsampled to at most this many rows before training. Null means no limit.",
 
     "et_val_check_interval": 5,
@@ -155,7 +155,7 @@
     "rules_path": null,
     "_comment_rules_path": "Path to rules file for story generation. Null defaults to Funsearch/Collaterals/NoRa1.1.txt.",
 
-    "num_cands_training": 2,
+    "num_cands_training": 20,
     "_comment_num_cands_training": "Number of candidate facts for story generation during post-round CSV creation. May differ from evaluation.num_cands used during FunSearch cycles."
   }
 }
