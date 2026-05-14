@@ -1,0 +1,182 @@
+##INSTRUCTION
+You are an AI participating in EVOLUTIONARY ALGORITHM SEARCH to generate candidate priority functions.
+
+##CONTEXT: This is FunSearch, an evolutionary approach where:
+You make WILD GUESSES and try different strategies
+Many attempts will fail, and that’s OKAY
+Through many trials, good patterns emerge and evolve
+CREATIVITY and EXPERIMENTATION are encouraged over perfection
+
+##TASK OVERVIEW
+You are designing a function:
+priority(cand_fact, definite_rules_program, entailed_facts, facts_program) -> float
+
+CRITICAL: The parameter order MUST be exactly as shown above:
+cand_fact (str)
+definite_rules_program (str)
+entailed_facts (str)
+facts_program (str)
+
+The purpose of this function is to score how useful a candidate fact would be if added to an existing story, given what it causes to become entailed under the definite rules.
+
+##EVOLUTIONARY PROGRESSION
+You will see priority_v0 and also the next version as a stub that you must complete.
+There are two cases:
+CASE A: priority_v1 is incomplete. priority_v0 is the baseline. Your job is to output a complete priority_v1 that improves on priority_v0.
+CASE B(more common): priority_v0 and a complete priority_v1 are shown. priority_v1 is already an improvement over priority_v0 and is the current best baseline. priority_v2 is incomplete. Your job is to output a complete priority_v2 that improves on priority_v1.
+
+##WHAT EACH ARGUMENT LOOKS LIKE AND WHAT IT MEANS
+All four arguments are Python strings. They contain ASP-style text (facts and rules).
+
+#ARGUMENT 1: cand_fact (str)
+This is a single grounded candidate fact string you are scoring. It is exactly one atom ending in a period.
+Example cand_fact:
+maternal_aunt_or_uncle_of(2,3).
+Grounded fact as it contains no variables. It uses concrete entity constants (integers like 2 and 3). The predicate name is lowercase (maternal_aunt_or_uncle_of).
+Here maternal_aunt_or_uncle_of is the predicate. The fact states that entities 2 and 3 are related by this predicate.
+You can view story building as a directed graph construction process: entities are nodes, facts are directed edges, and predicates are edge types.
+In this view, adding cand_fact means adding a directed edge of type maternal_aunt_or_uncle_of from node 2 to node 3 to the existing story graph (see ARGUMENT 4).
+
+Other candidate facts could be similar grounded atoms such as:
+father_of(1,3).
+living_in(3,4).
+school_mates_with(0,1).
+colleague_of(2,0).
+not_living_in(1,4).
+
+#ARGUMENT 2: definite_rules_program (str)
+This is a string containing many definite (Horn) rules written in ASP syntax, usually one rule per line. Rules are typically ungrounded and may include variables like X, Y, Z.
+
+Example definite_rules_program (small excerpt):
+maternal_uncle_of(X,Y) :- maternal_aunt_or_uncle_of(X,Y), is_male(X,X).
+aunt_or_uncle_of(X,Y) :- maternal_aunt_or_uncle_of(X,Y).
+nibling_of(Y,X) :- aunt_or_uncle_of(X,Y).
+living_in_same_place(X,Y) :- living_in_same_place(X,Z), living_in_same_place(Z,Y), !=(Y,X).
+maternal_grandmother_of(V,X) :- paternal_grandmother_of(U,X), grandmother_of(V,X), !=(U,V).
+
+How to read rules:
+The head is on the left of ":-" and is a single atom.
+The body is on the right of ":-" and is a comma-separated conjunction of atoms (and sometimes built-ins).
+Intuition: for any assignment of variables that makes the body true, the head must also be true for the same assignment
+
+Variables vs constants:
+Capitalized tokens like X, Y, Z, U, V are variables.
+Lowercase predicate names like parent_of, is_person, aunt_or_uncle_of are predicate symbols.
+Entity constants in grounded facts are integers like 0,1,2,3.
+An assignment (grounding) means choosing concrete entities for variables, e.g., assigning X=2 and Y=3, and then checking whether the rule body holds under that assignment; if it does, the rule head is entailed under that same assignment.
+
+Built-ins you may see include:
+!=(U,V) meaning U and V are not the same entity.
+
+#ARGUMENT 3: entailed_facts (str)
+This is a string containing grounded facts that become true after adding cand_fact to facts_program and applying definite_rules_program, excluding facts that were already explicitly present in facts_program (and excluding the candidate fact itself).
+
+Example entailed_facts:
+nibling_of(3,2).
+aunt_or_uncle_of(2,3).
+maternal_uncle_of(2,3).
+
+These facts can reflect multi-step inference chains and are the main signal for “non-obvious reasoning unlocked by the candidate.”
+
+#ARGUMENT 4: facts_program (str)
+This is the existing story: a string containing grounded facts already present, usually one per line, each ending in a period.
+
+Example facts_program (small excerpt):
+is_person(0).
+is_person(1).
+is_male(2,2).
+is_person(3).
+is_place(4).
+living_in(3,4).
+You can view facts_program as the current story graph: each line adds a directed edge (or a self-edge) labeled by the predicate.
+For example, is_person(0). can be viewed as a self-edge of type is_person at node 0, and living_in(3,4). is a directed edge of type living_in from node 3 to node 4.
+
+##HOW PREDICATES LOOK
+There are two broad kinds of predicates that will occur grounded in cand_fact, facts_program, entailed_facts or ungrounded in definite_rules_program
+#PREDICATES RELATING TWO ENTITIES (NON-SELF EDGES)
+These predicates relate two (typically distinct) entities. In graph terms, these are edge types for directed edges between two different nodes.
+Her are all the binary predicate names: 'aunt_of', 'aunt_or_uncle_of', 'brother_in_law_of', 'brother_of', 'child_in_law_of', 'child_of', 'colleague_of', 'daughter_in_law_of', 'daughter_of', 'father_in_law_of', 'father_of', 'grandchild_of', 'granddaughter_of', 'grandfather_of', 'grandmother_of', 'grandparent_of', 'grandson_of', 'husband_of', 'living_in', 'living_in_same_place', 'maternal_aunt_of', 'maternal_aunt_or_uncle_of', 'maternal_grandfather_of', 'maternal_grandmother_of', 'maternal_grandparent_of', 'maternal_uncle_of', 'mother_in_law_of', 'mother_of', 'nephew_of', 'nibling_of', 'niece_of', 'not_living_in', 'parent_in_law_of', 'parent_of', 'paternal_aunt_of', 'paternal_aunt_or_uncle_of', 'paternal_grandfather_of', 'paternal_grandmother_of', 'paternal_grandparent_of', 'paternal_uncle_of', 'school_mates_with', 'sibling_in_law_of', 'sibling_of', 'sister_in_law_of', 'sister_of', 'son_in_law_of', 'son_of', 'spouse_of', 'uncle_of', 'wife_of'
+How they appear in grounded facts (cand_fact, facts_program, entailed_facts):
+aunt_or_uncle_of(2,3). Here 2 and 3 are distinct entities, so this is a directed edge from node 2 to node 3 with edge type aunt_or_uncle_of.
+How they appear in rules (definite_rules_program):
+... , aunt_or_uncle_of(X,Y) , ...
+Here X and Y are variables, and the rule can apply under assignments where X and Y are mapped to concrete entities. X and Y represent two (possibly distinct) entities.
+
+#PREDICATES RELATING AN ENTITY TO ITSELF (SELF-LOOP EDGES)
+These predicates relate the same entity to itself. In graph terms, these are edge types for self-loop edges at a node.
+full list of such predicate names = 'is_female', 'is_male', 'is_underage', 'no_brothers', 'no_children', 'no_daughters', 'no_siblings', 'no_sisters', 'no_sons'
+example in grounded form is_male(2,2).
+Here the two arguments are the same entity, so this is a self-loop edge at that node with the corresponding edge type.
+
+These also appear in rules in ungrounded form in either the head or the body, e.g.:
+... , is_male(X,X) , ...
+
+#SPECIAL UNARY PREDICATES (SHORTHAND FOR SELF-LOOPS)
+There are two special predicates 'is_person', 'is_place' that are conceptually self-loop properties but are written as unary predicates: 
+is_person(1).
+is_place(4).
+Interpret these as self-loop edges at node 1 (edge type is_person) and at node 4 (edge type is_place).
+
+##SMALL ILLUSTRATIVE EXAMPLE OF HOW THESE ARGUMENTS RELATE
+Consider the same example values shown in the previous section for cand_fact, definite_rules_program, entailed_facts, and facts_program.
+
+Intuition for why entailment happens in this setup:
+The candidate fact plugs into one or more rule bodies in definite_rules_program.
+Combined with existing grounded facts in facts_program, this can trigger one-step entailments (a head becomes true).
+Those newly entailed facts can then trigger additional rules, producing further entailments.
+This cascading effect is how multi-step inference chains arise.
+
+##WHAT MAKES A CANDIDATE FACT USEFUL
+A candidate fact is useful if it tends to produce at least one entailed fact that is hard for reasoning models to deduce from the explicit story alone. You are not simply maximizing the number of entailed facts. You are trying to favor candidates that unlock non-obvious consequences, often reflected by unusual interactions.
+
+Because you will be shown a series of previously-evolved priority functions (priority_v0, priority_v1) that are already sorted by performance, those examples are your best guide to what kinds of heuristics are working in the evolutionary progression. Your goal is to build on the current best (or intentionally try a different angle) to improve performance.
+
+##CRITICAL CONSTRAINTS:
+ONLY use Python built-ins: len, str, int, float, sum, max, min, abs, round
+ONLY string/list methods: split(), count(), find(), startswith(), strip()
+NO imports, NO undefined functions, NO external libraries
+Must return a float (the priority score)
+Keep logic self-contained in one function
+
+
+##EVOLUTION STRATEGIES 
+#If you only see complete priority_v0, try SIMPLE approaches first:
+- Count entailed facts: len(entailed_facts.strip().split('\n')) if entailed_facts.strip() else 0
+- Find candidate facts with entities common to entities in facts_program (e.g., extract numbers from both and check overlap)
+- Return any positive number based on simple metrics
+#When you see full demontsrations priority_v0, priority_v1, and need to complete priority_v2 :
+1. **TWEAK THE BEST**: Take priority_v{{i}} (the current best) and make SMALL modifications:
+   - Adjust constants/weights slightly (e.g., change 0.5 to 0.7, or 2.0 to 1.5)
+   - Add a small bonus/penalty term to the existing logic
+   - Modify thresholds or conditions slightly
+   - Combine metrics differently (e.g., multiply instead of add, or vice versa)
+   - If you can identify what specifically made priority_v1 better than priority_v0, explore more in that same direction (strengthen that signal, extend it, or make it more robust).
+2. **TRY SOMETHING COMPLETELY NEW**: Ignore previous versions and experiment with a fresh idea:
+   - Use same strategies as in SIMPLE STARTING STRATEGIES
+
+
+IMPORTANT: Always write a COMPLETE function with actual logic, not just a skeleton!
+
+##OUTPUT FORMAT (CRITICAL):
+Your output must be EXACTLY ONE function: the incomplete version that is incomplete in the Code section.
+If priority_v1 is incomplete, output ONLY the completed priority_v1.
+If priority_v2 is incomplete, output ONLY the completed priority_v2.
+You MUST output a COMPLETE working function with actual code logic, NOT just a skeleton!
+You MAY use markdown code blocks: ```python ... ``` (this is fine!)
+Include: function signature (def priority_v...), docstring (can be brief), body with ACTUAL LOGIC, return statement
+Do NOT include markdown headings or commentary (no lines starting with # or ##). Output only the single Python function.
+
+EXAMPLE of what to output (notice the complete implementation):
+```python
+def priority_v1(cand_fact: str, definite_rules_program: str, entailed_facts: str, facts_program: str) -> float:
+    """Count the number of entailed facts as a simple baseline."""
+    if not entailed_facts.strip():
+        return 0.0
+    return float(len(entailed_facts.strip().split('\n')))
+```
+
+##Code:
+
+{code_context}
+
+Response:

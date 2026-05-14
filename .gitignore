@@ -1,0 +1,8 @@
+sbatch_server_ini_logs/*
+RunFunsearchEvo/Funsearch/Logs/*
+Funsearch/*
+*.log
+*.out
+*.err
+.venv
+*core*

@@ -1,0 +1,9 @@
+[INST] Complete the body of the last function in this evolutionary algorithm code. 
+
+IMPORTANT: Each version IMPROVES upon the previous one (v1 improves v0, v2 improves v1, v{{i+1}} improves v{{i}}, etc.). 
+Your job: Make the last version better than all previous versions.
+
+CRITICAL: Only use Python built-in functions. DO NOT call undefined helper functions or import modules.
+
+{code_context}
+[/INST]
