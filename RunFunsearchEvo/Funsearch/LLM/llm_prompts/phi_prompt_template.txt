@@ -1,0 +1,13 @@
+<|user|>
+Complete the body of the last priority function. Each version improves upon the previous one:
+- v1 improves v0
+- v2 improves v1
+- v{{i+1}} improves v{{i}}
+- etc.
+
+Make the last version BETTER than the previous ones.
+
+IMPORTANT: Only use Python built-in functions. Do not call undefined functions.
+
+{code_context}<|end|>
+<|assistant|>

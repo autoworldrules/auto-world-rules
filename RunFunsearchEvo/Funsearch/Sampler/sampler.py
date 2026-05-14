@@ -1,0 +1,202 @@
+# Copyright 2023 DeepMind Technologies Limited
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
+"""Class for sampling new programs."""
+from collections.abc import Collection, Sequence
+import ast
+import sys
+import os
+from typing import Optional
+
+this_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(this_dir, '..', '..'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+import numpy as np
+import logging
+from typing import Optional
+
+from DeepMindCodeReference.implementation import evaluator
+from DeepMindCodeReference.implementation import programs_database
+from Funsearch.Sampler.process_llm_generation import extract_function_from_llm_output
+
+
+class LLM:
+    """Language model that predicts continuation of provided source code."""
+
+    def __init__(
+        self, 
+        samples_per_prompt: int,
+        use_local_llm: bool = False,
+        llm_config: Optional[str] = "deepseek-1.3b",
+        max_retries: int = 5,
+        logger: Optional[logging.Logger] = None,
+    ) -> None:
+        """
+        Initialize LLM sampler.
+        
+        Args:
+            samples_per_prompt: Number of samples to generate per prompt
+            use_local_llm: If True, use local LLM. If False, use placeholder.
+            llm_config: Name of LLM config from llm_configs.py (e.g., "deepseek-1.3b")
+            max_retries: Maximum number of retries if LLM fails to generate valid function
+            logger: Logger instance for logging
+        """
+        self._samples_per_prompt = samples_per_prompt
+        self._use_local_llm = use_local_llm
+        self._local_llm = None
+        self._max_retries = max_retries
+        self._prompt_template = None  # Initialize here
+        self._logger = logger or logging.getLogger(__name__)
+        
+        if use_local_llm:
+            try:
+                from Funsearch.LLM.LlmModels.local_llm import LocalLLM
+                from Funsearch.LLM.LlmModels.llm_configs import get_config
+                
+                self._logger.info(f"Initializing local LLM with config: {llm_config}")
+                config = get_config(llm_config)
+                
+                # Extract generation parameters (not used in __init__)
+                self._max_tokens = config.pop('max_tokens', 512)
+                self._temperature = config.pop('temperature', 0.8)
+                self._prompt_template = config.pop('prompt_template', None)  # Store prompt template path
+                config.pop('description', None)  # Remove description from config
+                
+                # Now pass only the valid __init__ parameters
+                self._local_llm = LocalLLM(**config)
+                self._logger.debug("Local LLM initialized successfully!")
+                
+            except Exception as e:
+                self._logger.error(f"Failed to initialize local LLM: {e}")
+                self._logger.info("Falling back to placeholder mode.")
+                self._logger.info("Install requirements: pip install -r Funsearch/LLM/LlmModels/llm_requirements.txt")
+                self._use_local_llm = False
+
+    def _draw_sample(self, prompt: str) -> str:
+        """Returns a predicted continuation of `prompt`."""
+        if self._use_local_llm and self._local_llm is not None:
+            # Use actual LLM to generate code, with retries
+            formatted_prompt = self._local_llm.format_prompt(prompt, self._prompt_template)
+            self._logger.debug(f'formatted prompt being given to llm is \n{formatted_prompt}')
+            for attempt in range(self._max_retries):
+                try:
+                    generated = self._local_llm.generate(
+                        formatted_prompt,
+                        max_tokens=self._max_tokens,
+                        temperature=self._temperature,
+                        stop_strings=["\n\ndef ", "\nclass ", "\n@", "\nif __name__"]
+                    )
+                except Exception as gen_error:
+                    self._logger.error(f'[Attempt {attempt + 1}/{self._max_retries}] LLM generation encountered error')
+                    self._logger.error(f'Error details: {gen_error}')
+                    import traceback
+                    self._logger.error(traceback.format_exc())
+                    continue
+                
+                self._logger.info(f'[Attempt {attempt + 1}/{self._max_retries}] raw generated by llm is \n{generated}')
+                
+                # Extract only the complete function definition
+                extracted, is_valid = extract_function_from_llm_output(generated)
+                
+                if is_valid:
+                    self._logger.info(f'Successfully extracted function on attempt {attempt + 1}')
+                    return extracted
+                else:
+                    self._logger.warning(f'[Attempt {attempt + 1}/{self._max_retries}] Failed to extract valid function, retrying...')
+            
+            # All retries exhausted - return placeholder string instead of raising error
+            self._logger.error(
+                f"LLM failed to generate a valid function after {self._max_retries} attempts. "
+                f"Last generated text: {generated[:100]}... Returning placeholder."
+            )
+            return "No legitimate generation from llm"
+        else:
+            # Placeholder implementation for testing without LLM
+            return """
+def priority(cand_fact: str, definite_rules_program: str, entailed_facts: str, facts_program: str) -> float:
+    '''
+    Priority function for selecting among candidate facts.
+
+    Inputs:
+      - cand_fact: candidate fact string, e.g. "father_of(1,3)."
+      - definite_rules_program: string containing all definite (Horn) rules
+      - entailed_facts: string containing facts in the stable model that are not in story facts or candidate facts
+      - facts_program: string containing all ground facts
+
+    FunSearch should evolve this function.
+    '''
+    return len(cand_fact)
+"""
+
+    def draw_samples(self, prompt: str) -> Collection[str]:
+        """Returns multiple predicted continuations of `prompt`."""
+        return [self._draw_sample(prompt) for _ in range(self._samples_per_prompt)]
+
+
+class Sampler:
+    """Node that samples program continuations and sends them for analysis."""
+
+    def __init__(
+            self,
+            database: programs_database.ProgramsDatabase,
+            evaluators: Sequence[evaluator.Evaluator],
+            samples_per_prompt: int,
+            use_local_llm: bool = False,
+            llm_config: Optional[str] = "deepseek-1.3b",
+            max_retries: int = 5,
+            num_tries_per_sampler: int = 1,
+            use_island_partitioning: bool = False,
+            sampler_id: Optional[int] = None,
+            total_samplers: Optional[int] = None,
+            logger: Optional[logging.Logger] = None,
+    ) -> None:
+        self._database = database
+        self._evaluators = evaluators
+        self._logger = logger or logging.getLogger(__name__)
+        self._llm = LLM(samples_per_prompt, use_local_llm, llm_config, max_retries, self._logger)
+        self._num_tries_per_sampler = num_tries_per_sampler
+        self._use_island_partitioning = use_island_partitioning
+        self._sampler_id = sampler_id
+        self._total_samplers = total_samplers
+        
+
+    def sample(self):
+        """Continuously gets prompts, samples programs, sends them for analysis."""
+        for try_num in range(self._num_tries_per_sampler):
+            self._logger.debug(f'Sampler try {try_num + 1}/{self._num_tries_per_sampler}')
+            
+            # Get a prompt from the correct island
+            while True:
+                prompt = self._database.get_prompt()
+                
+                # If island partitioning is enabled, retry until we get a prompt from the correct island
+                if self._use_island_partitioning:
+                    if prompt.island_id % self._total_samplers != self._sampler_id:
+                        # self._logger.info(f'Sampler {self._sampler_id} skipping island {prompt.island_id} '
+                        #       f'(island_id % {self._total_samplers} = {prompt.island_id % self._total_samplers}, '
+                        #       f'expected {self._sampler_id}), retrying...')
+                        continue
+                break
+            
+            self._logger.debug(f'Sampler {self._sampler_id if self._use_island_partitioning else ""} '
+                  f'got prompt for island {prompt.island_id}')
+            samples = self._llm.draw_samples(prompt.code)
+            # This loop can be executed in parallel on remote evaluator machines.
+            for sample in samples:
+                chosen_evaluator = np.random.choice(self._evaluators)
+                chosen_evaluator.analyse(
+                        sample, prompt.island_id, prompt.version_generated, self._logger)
