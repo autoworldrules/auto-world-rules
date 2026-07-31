@@ -1,0 +1,63 @@
+
+Your role is to generate new sets of rules used to construct graphs that pose challenging reasoning problems. Your final response must contain a list of domain base facts and the entire set of created rules after outputting the </think> token. Finally, generate the word 'END' on a new line when you are done with outputting all the rules.
+
+
+
+I'm looking for an interesting rule base that can be used for evaluating the reasoning abilities of AI models. The rule base should be encoded using Answer Set Programming (ASP) syntax. In particular, it can contain the following types of rules.
+
+Facts have the following form.
+
+r(a,b).
+
+This fact states that the relationship r holds between the objects a and b.
+
+r(a,a) can also be written r(a).
+
+Next, standard rules have the following form:
+
+r(X,Z) :- u(X,Y), v(Y,Z).
+
+r(X,X) can also be written r(X).
+
+Here X,Y,Z are variables. The rule states that when X is in relation u with Y, and Y is in relation v with Z, then X is in relation r with Z. The number of conditions in a rule can vary. For instance, the following are also valid examples of rules:
+
+r(X,Y) :- s(Y,X).
+r(X,Y) :- u(X,Y), v(Y,Z).
+
+In addition to standard rules, we also have choice rules, which have the following form:
+
+{r(X,Y),s(X,Y)} :- u(X,Y).
+
+This choice rule means that whenever X is in relation u with Y, then at least one of r(X,Y) or s(X,Y) should hold. Other examples of choice rules are:
+
+r(X,Y) :- s(Y,X).
+r(X,Y) :- u(X,Y), v(Y,Z).
+
+Choice rules are typically used in combination with constraints. These take the following form:
+
+:- r(X,Y), s(X,Y).
+
+This constraint means that r(X,Y) and s(X,Y) cannot be jointly satisfied. Another example is:
+
+:- r(X,Y), s(X,Z), Y!=Z.
+
+This means that r(X,Y), and s(X,Z) cannot both be satisfied when Y is different from Z.
+
+Additional constraints for this project :
+- Relations must not have more than two arguments.
+- A relation must appear in your final answer only if it is used in more than one rule. Note that we are interested in the creation of rule bases that pose reasoning challenges beyond hierarchies and transitivity. The rules must be connected, and connected in various ways so that the reasoning challenges are diverse.
+- Do not use any numerical value in the rules. For example ":- reviewer(R), #count { P : assigned(R, P) } > 2." is not acceptable.
+- Create at least 40 different rules. 
+-The rules should be preceded by a list of domain base facts.
+
+These are good examples of rules, that are part of a rule base in the domain of family relations: 
+maternal_grandmother_of(V,X):- paternal_grandmother_of(U,X), grandmother_of(V,X), U != V. 
+is_female(X) :- mother_of(X,Y).
+{father(X,Y),mother(X,Y)} :- parent(X,Y).
+
+
+Please create an extensive rule base which describes some domain of interest and which is likely to be challenging for AI models. Check carefully the consistency of the rules you propose.
+
+Your final response must be a complete list of all the rules of the world you created and may contain comments on lines starting with "%". The rules should be preceded by a list of domain base facts. Output the world "END" on a new line after your response. 
+
+
