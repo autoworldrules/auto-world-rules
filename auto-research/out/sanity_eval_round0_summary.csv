@@ -1,0 +1,2 @@
+test_csv,test_csv_full_path,num_stories,mean_acc,std_acc,mean_macro_f1,std_macro_f1,mean_micro_f1,std_micro_f1,mean_loss,std_loss
+sanity_eval_round0.csv,auto-research/out/sanity_eval_round0.csv,24,0.6549708054711422,0.24660880260902848,0.0632226456701156,0.042182227272347696,0.7633472533433178,0.15687426663687298,0.14351208669793744,0.11673983098163151

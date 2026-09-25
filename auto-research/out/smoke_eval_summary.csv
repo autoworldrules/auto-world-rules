@@ -1,0 +1,2 @@
+test_csv,test_csv_full_path,num_stories,mean_acc,std_acc,mean_macro_f1,std_macro_f1,mean_micro_f1,std_micro_f1,mean_loss,std_loss
+smoke_base_train.csv,auto-research/out/smoke_base_train.csv,2,0.0,0.0,0.024923187013350948,0.010578924718268979,0.05776724591890468,0.01332280147446024,0.7406240999698639,0.004931002855300903
