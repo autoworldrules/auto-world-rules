@@ -53,7 +53,7 @@ pip install clingo
 ## Layout
 
 ```
-Claude_Samplers_and_worlds/
+claude_samplers_and_worlds/
 ├── samplers/                       8 samplers, one graph per invocation
 │   ├── general_atlas_sampler.py
 │   ├── general_backward_sampler.py
@@ -64,7 +64,12 @@ Claude_Samplers_and_worlds/
 │   ├── nora_greedy_sampler.py
 │   └── nora_template_sampler.py
 ├── worlds/
+│   ├── NoRa.lp
 │   ├── ironcoast.lp
+│   ├── additional-worlds-used-in-figure4/
+│   │   ├── alchemists_cauldron.lp, deepreef.lp, symposium.lp
+│   │   ├── prompt-alchemist-cauldron.txt, prompt-deepreef.txt, prompt-symposium.txt
+│   │   └── training-method-details.txt
 │   └── worlds-used-for-sampler-robustness-generated-by-various-models/
 │       ├── claude-opus-4.6-spynet_rules.lp
 │       ├── claude-opus4.6-medieval-kingdom-rules.lp
@@ -87,14 +92,21 @@ Claude_Samplers_and_worlds/
 
 ## Worlds
 
-Ironcoast is used as a benchmark world. The
-remaining worlds exist to test sampler robustness.
+Ironcoast is used as a benchmark world. The worlds in
+`additional-worlds-used-in-figure4/` are the additional rule sets used in Figure 4,
+each with the prompt that produced it; `training-method-details.txt` describes how
+the EdgeTransformer models were trained for that figure. The worlds in
+`worlds-used-for-sampler-robustness-generated-by-various-models/` exist to test
+sampler robustness.
 
 
 | Rule set | Rules | Constraints | NAF | Choice | Prompt |
 |---|---:|---:|---:|---:|---|
-| **NoRa** | — | — | no | no | manually created and refined |
+| **NoRa** | 292 | 90 | no | no | manually created and refined |
 | **Ironcoast** | 85 | 16 | no | no | harder than NoRa and different, without disjunction or negation |
+| **Alchemist's Cauldron** | 14 | 2 | no | no | small, harder than Ironcoast and NoRa, high off-path edge count |
+| **Deep Reef** | 115 | 23 | no | no | harder than Ironcoast and NoRa, no choice rules, at most 3 entity types |
+| **Symposium** | 118 | 25 | no | no | harder than Ironcoast and NoRa, no choice rules |
 | **SpyNet** | 238 | 56 | 52 | no | harder than NoRa and different |
 | **Medieval Kingdom** | 60 | 6 | 10 | 2 | create a challenging set |
 | claude-0-se4 | 72 | 10 | 5 | 11 | create a challenging set |
