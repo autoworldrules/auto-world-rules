@@ -162,7 +162,20 @@ last fully-completed round and restarts from the next one without retraining.
 ---
 
 
-## 4. Citation / contact
+## 4. Notes on what is NOT included
+
+The following are intentionally omitted from this public release because they
+are not on the execution path of the entry point:
+
+- `Funsearch/PostDatabaseGeneration/` — post-hoc analysis & causal-attribution tooling
+- `Funsearch/MultiRoundEvalTrainer/HowGodIsSuperET/`, `plotting/`, `verify_round_success.py`
+- `Funsearch/tests/`
+- `pytorch_scatter/` (vendored; install via `pip` per the env setup)
+- All experiment results, logs, scrap notebooks, and the original `.venv/`
+
+---
+
+## 5. Citation / contact
 
 This release builds on ideas and/or components associated with [Potassco / clingo](https://potassco.org/), [google-deepmind/funsearch](https://github.com/google-deepmind/funsearch), and the NoRA paper [When No Paths Lead to Rome: Benchmarking Systematic Neural Relational Reasoning](https://openreview.net/forum?id=HZJiIog5XH). These resources are compatible with non-commercial research use when proper attribution is maintained: clingo is distributed under the MIT License, the DeepMind FunSearch software is distributed under Apache 2.0, and the OpenReview paper page indicates a CC BY-NC 4.0 license.
 
