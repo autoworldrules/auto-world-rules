@@ -1,0 +1,5 @@
+Training. Each model was trained for 100 epochs with batch size 32, using Adam at learning rate 1e-3 with linear warmup over 100 steps followed by linear decay to zero, gradient clipping at global norm 1.0, and fp32 precision. Seed 42. Validation on a random 20% of training rows, every 10 epochs; the model evaluated is the one at the final epoch, with no checkpoint selection.
+
+Model. EdgeTransformer with hidden dimension 256, 32 attention heads, 2 message-passing rounds with shared weights, feed-forward expansion factor 4, dropout 0.2. Binary cross-entropy loss, one logit per relation, threshold 0.5.
+
+Data. 14,000 training rows per fold (seven datasets of 2,000), tested on the 2,000 rows of the held-out priority function. Trained on 2 × NVIDIA H100, 4 folds per GPU, about 40 minutes per fold.
